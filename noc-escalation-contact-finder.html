@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Telecom NOC Escalation Contact Finder</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- SheetJS XLSX Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha512-2N+vNv9B+P1kweRl/abK12he8WUyoMQ06FxVg1gACf2C1KaONYmMneg8/dOG05mY7acUvS2/PztZUb2feoGcWg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --bg-alt: #020617;
+      --card: #020617;
+      --card-alt: #0b1220;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56,189,248,0.15);
+      --accent-strong: #0ea5e9;
+      --border: #1e293b;
+      --border-soft: #1f2937;
+      --text: #e5e7eb;
+      --text-soft: #9ca3af;
+      --danger: #f97373;
+      --danger-soft: rgba(248,113,113,0.1);
+      --warning-soft: rgba(252,211,77,0.15);
+      --success-soft: rgba(52,211,153,0.15);
+      --radius-lg: 14px;
+      --radius-md: 10px;
+      --radius-pill: 999px;
+      --shadow-soft: 0 18px 45px rgba(15,23,42,0.9);
+      --shadow-chip: 0 10px 25px rgba(15,23,42,0.8);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: radial-gradient(circle at top left, #1d2537 0, #020617 42%, #000 100%);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 1320px;
+      background: linear-gradient(145deg, rgba(15,23,42,0.98), rgba(15,23,42,0.95));
+      border-radius: 24px;
+      border: 1px solid rgba(148,163,184,0.12);
+      box-shadow: var(--shadow-soft);
+      padding: 22px 24px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-shell::before {
+      content: "";
+      position: absolute;
+      inset: -120px;
+      background:
+        radial-gradient(circle at top right, rgba(56,189,248,0.15), transparent 60%),
+        radial-gradient(circle at center left, rgba(129,140,248,0.1), transparent 55%);
+      opacity: 0.9;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .app-header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px 18px;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .brand-pill {
+      background: radial-gradient(circle at 0% 0%, rgba(56,189,248,0.25), rgba(59,130,246,0.15));
+      border-radius: var(--radius-pill);
+      padding: 4px 10px 4px 5px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148,163,184,0.28);
+      box-shadow: 0 0 0 1px rgba(15,23,42,0.7), 0 10px 30px rgba(15,23,42,0.9);
+    }
+
+    .brand-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 8px;
+      background:
+        conic-gradient(from 210deg, #38bdf8, #a855f7, #22c55e, #38bdf8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .brand-dot::after {
+      content: "";
+      position: absolute;
+      inset: 3px;
+      border-radius: 6px;
+      background: radial-gradient(circle at 30% 20%, rgba(248,250,252,0.9), rgba(15,23,42,0.9));
+      mix-blend-mode: screen;
+      opacity: 0.7;
+    }
+
+    .brand-pill span {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 22px;
+      margin: 0;
+      letter-spacing: -0.03em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    h1 span.accent {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 13px;
+      color: var(--text-soft);
+      max-width: 620px;
+    }
+
+    .key-metrics {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .metric-chip {
+      border-radius: var(--radius-pill);
+      padding: 4px 10px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148,163,184,0.32);
+      background: radial-gradient(circle at 0 0, rgba(51,65,85,0.95), rgba(15,23,42,0.98));
+      box-shadow: var(--shadow-chip);
+      color: #e5e7eb;
+    }
+
+    .metric-chip span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #34d399;
+      box-shadow: 0 0 0 4px rgba(52,211,153,0.25);
+    }
+
+    .metric-chip span.label {
+      text-transform: uppercase;
+      letter-spacing: 0.16em;
+      opacity: 0.9;
+    }
+
+    .metric-chip span.value {
+      font-weight: 600;
+      opacity: 0.85;
+    }
+
+    .metric-chip.warn {
+      border-color: rgba(248,250,252,0.35);
+      background: radial-gradient(circle at 0 0, rgba(30,64,175,0.95), rgba(15,23,42,0.98));
+    }
+
+    .metric-chip.warn span.dot {
+      background: #38bdf8;
+      box-shadow: 0 0 0 4px rgba(56,189,248,0.28);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
+      gap: 16px;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        padding: 12px;
+      }
+      .app-shell {
+        padding: 16px 14px 18px;
+        border-radius: 18px;
+      }
+      .layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+    }
+
+    .panel {
+      background: radial-gradient(circle at top left, rgba(31,41,55,0.8), rgba(15,23,42,0.96));
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 12px 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .panel::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(56,189,248,0.08), transparent 60%);
+      pointer-events: none;
+      opacity: 0.9;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .panel-title-badge {
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      background: radial-gradient(circle at 30% 0%, rgba(248,250,252,0.8), rgba(125,211,252,0.2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: #020617;
+      font-weight: 700;
+      box-shadow: 0 6px 14px rgba(15,23,42,0.9);
+    }
+
+    .panel-subtitle {
+      font-size: 11px;
+      color: var(--text-soft);
+      margin: 0;
+    }
+
+    .panel-body {
+      position: relative;
+      z-index: 1;
+      border-radius: 10px;
+      padding: 8px 8px 10px;
+      background: radial-gradient(circle at top left, rgba(15,23,42,0.85), rgba(2,6,23,0.95));
+      border: 1px solid rgba(30,64,175,0.6);
+      box-shadow: 0 14px 40px rgba(15,23,42,0.85);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .upload-zone {
+      border-radius: 10px;
+      border: 1px dashed rgba(148,163,184,0.6);
+      background: linear-gradient(135deg, rgba(15,23,42,0.88), rgba(15,23,42,0.96));
+      padding: 10px 10px 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .upload-main {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .upload-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: radial-gradient(circle at 20% 0%, rgba(248,250,252,0.8), rgba(129,140,248,0.4));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #020617;
+      font-size: 16px;
+      box-shadow: 0 11px 20px rgba(15,23,42,0.9);
+      flex-shrink: 0;
+    }
+
+    .upload-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .upload-text-title {
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .upload-text-desc {
+      font-size: 11px;
+      color: var(--text-soft);
+    }
+
+    .upload-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 2px;
+    }
+
+    .btn {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 7px 12px;
+      border-radius: var(--radius-pill);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      border: 1px solid rgba(148,163,184,0.45);
+      background: radial-gradient(circle at 0 0, rgba(52,211,153,0.22), rgba(15,23,42,0.96));
+      color: #ecfeff;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      box-shadow: 0 12px 28px rgba(15,23,42,0.9);
+      text-transform: uppercase;
+    }
+
+    .btn span.icon {
+      font-size: 12px;
+    }
+
+    .btn-secondary {
+      background: radial-gradient(circle at 0 0, rgba(15,23,42,1), rgba(15,23,42,1));
+      color: #e5e7eb;
+      border-color: rgba(148,163,184,0.4);
+      box-shadow: 0 10px 24px rgba(15,23,42,0.9);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border-color: rgba(148,163,184,0.38);
+      color: var(--text-soft);
+      box-shadow: none;
+    }
+
+    .btn:disabled {
+      opacity: 0.52;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 30px rgba(15,23,42,0.9);
+      border-color: rgba(248,250,252,0.7);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      border-color: rgba(148,163,184,0.7);
+      box-shadow: 0 8px 18px rgba(15,23,42,0.9);
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .file-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      font-size: 11px;
+      margin-top: 2px;
+      color: var(--text-soft);
+      align-items: center;
+    }
+
+    .file-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 8px 2px 6px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.6);
+      background: radial-gradient(circle at 0 0, rgba(30,64,175,0.82), rgba(15,23,42,0.98));
+      box-shadow: 0 10px 22px rgba(15,23,42,0.9);
+      color: #e5e7eb;
+    }
+
+    .file-pill span.dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: #34d399;
+      box-shadow: 0 0 0 4px rgba(52,211,153,0.22);
+    }
+
+    .file-pill span.name {
+      max-width: 150px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-pill span.meta {
+      opacity: 0.8;
+    }
+
+    .file-pill.empty span.dot {
+      background: #f97316;
+      box-shadow: 0 0 0 4px rgba(248,113,22,0.26);
+    }
+
+    .hint {
+      font-size: 10px;
+      color: var(--text-soft);
+      opacity: 0.9;
+    }
+
+    .hint strong {
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    .status-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px 8px;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+
+    .status-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .status-pill {
+      padding: 1px 7px 2px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.45);
+      font-size: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-soft);
+      background: rgba(15,23,42,0.96);
+    }
+
+    .status-pill span.dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .status-pill.warn span.dot {
+      background: #facc15;
+    }
+
+    .status-pill.error span.dot {
+      background: #f97373;
+    }
+
+    .status-text {
+      color: var(--text-soft);
+    }
+
+    .status-text span {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .results-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .results-top {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 260px;
+      min-width: 180px;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 6px 26px 6px 22px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.55);
+      background: rgba(15,23,42,0.98);
+      color: var(--text);
+      font-size: 11px;
+      outline: none;
+      box-shadow: 0 10px 24px rgba(15,23,42,0.9);
+    }
+
+    .search-box input::placeholder {
+      color: rgba(148,163,184,0.8);
+    }
+
+    .search-box span.icon {
+      position: absolute;
+      left: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: rgba(148,163,184,0.9);
+    }
+
+    .search-box span.meta {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 9px;
+      color: rgba(148,163,184,0.75);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .results-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+
+    .results-actions .btn {
+      padding: 6px 10px;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+    }
+
+    .table-wrapper {
+      position: relative;
+      border-radius: 12px;
+      border: 1px solid var(--border-soft);
+      background: radial-gradient(circle at 0 0, rgba(15,23,42,0.98), rgba(2,6,23,0.98));
+      box-shadow: 0 18px 40px rgba(15,23,42,0.96);
+      overflow: hidden;
+    }
+
+    .table-scroll {
+      max-height: 390px;
+      overflow: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148,163,184,0.9) rgba(15,23,42,0.95);
+    }
+
+    .table-scroll::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+
+    .table-scroll::-webkit-scrollbar-track {
+      background: rgba(15,23,42,0.9);
+      border-radius: 999px;
+    }
+
+    .table-scroll::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, rgba(56,189,248,0.9), rgba(129,140,248,0.9));
+      border-radius: 999px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 720px;
+      font-size: 11px;
+      table-layout: fixed;
+    }
+
+    thead {
+      background: linear-gradient(90deg, rgba(15,23,42,1), rgba(15,23,42,0.96));
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    th, td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(31,41,55,0.8);
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    th {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: rgba(156,163,175,0.96);
+      position: relative;
+    }
+
+    th span.label {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    th span.pill {
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.6);
+      padding: 1px 5px;
+      font-size: 9px;
+      color: rgba(209,213,219,0.95);
+      background: rgba(2,6,23,0.9);
+    }
+
+    tr:nth-child(even) td {
+      background: rgba(15,23,42,0.98);
+    }
+
+    tr:nth-child(odd) td {
+      background: rgba(2,6,23,0.98);
+    }
+
+    tr.missing-contact td {
+      background: var(--warning-soft);
+      border-bottom-color: rgba(234,179,8,0.55);
+    }
+
+    tr.not-found td {
+      background: var(--danger-soft);
+      border-bottom-color: rgba(248,113,113,0.6);
+    }
+
+    td {
+      color: rgba(229,231,235,0.96);
+    }
+
+    td.meta {
+      font-size: 10px;
+      color: rgba(148,163,184,0.95);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      border: 1px solid rgba(148,163,184,0.7);
+      background: rgba(15,23,42,0.98);
+      color: rgba(229,231,235,0.96);
+    }
+
+    .badge-soft {
+      background: rgba(15,118,110,0.18);
+      border-color: rgba(45,212,191,0.7);
+      color: rgba(204,251,241,0.96);
+    }
+
+    .badge-error {
+      background: rgba(127,29,29,0.35);
+      border-color: rgba(248,113,113,0.9);
+      color: #fecaca;
+    }
+
+    .badge-warn {
+      background: rgba(161,98,7,0.4);
+      border-color: rgba(250,204,21,0.9);
+      color: #fef9c3;
+    }
+
+    .no-data {
+      padding: 30px 20px;
+      text-align: center;
+      color: var(--text-soft);
+      font-size: 12px;
+    }
+
+    .no-data h3 {
+      margin: 0 0 4px;
+      font-size: 13px;
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    .no-data p {
+      margin: 0;
+      font-size: 11px;
+    }
+
+    .no-data-actions {
+      margin-top: 14px;
+      display: flex;
+      justify-content: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .footer {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 10px;
+      color: rgba(148,163,184,0.9);
+    }
+
+    .footer span.strong {
+      color: #e5e7eb;
+      font-weight: 500;
+    }
+
+    .footer span.badge-small {
+      border-radius: var(--radius-pill);
+      padding: 2px 6px;
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.98);
+      margin-left: 4px;
+    }
+
+    .highlight {
+      color: var(--accent-strong);
+      font-weight: 600;
+    }
+
+    .pill-count {
+      border-radius: var(--radius-pill);
+      padding: 2px 6px;
+      border: 1px solid rgba(148,163,184,0.6);
+      font-size: 10px;
+      background: rgba(15,23,42,0.98);
+      color: rgba(229,231,235,0.96);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 1px 6px;
+      border-radius: var(--radius-pill);
+      border: 1px solid rgba(148,163,184,0.6);
+      background: rgba(15,23,42,0.98);
+      font-size: 10px;
+      color: rgba(209,213,219,0.96);
+    }
+
+    .tag span.dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #38bdf8;
+    }
+
+    .tag-soft {
+      border-color: rgba(45,212,191,0.7);
+      color: rgba(204,251,241,0.96);
+    }
+
+    .tag-soft span.dot {
+      background: #22c55e;
+    }
+
+    .text-right {
+      text-align: right;
+    }
+
+    .muted {
+      color: rgba(148,163,184,0.9);
+    }
+
+    @media (max-width: 720px) {
+      table {
+        min-width: 620px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="app-header">
+      <div class="title-block">
+        <div class="title-row">
+          <div class="brand-pill">
+            <div class="brand-dot"></div>
+            <span>NOC ESCALATION CONSOLE</span>
+          </div>
+        </div>
+        <h1>
+          Telecom NOC <span class="accent">Escalation Contact Finder</span>
+        </h1>
+        <p class="subtitle">
+          Upload your <strong>Escalation Matrix</strong> and <strong>TT / Alarm Excel</strong> to instantly generate
+          all escalation contact numbers for affected sites – 100% browser-based, no data leaves your machine.
+        </p>
+      </div>
+      <div class="key-metrics">
+        <div class="metric-chip">
+          <span class="dot"></span>
+          <span class="label">Client‑side</span>
+          <span class="value">Secure | No Backend</span>
+        </div>
+        <div class="metric-chip warn">
+          <span class="dot"></span>
+          <span class="label">Scale</span>
+          <span class="value">3k+ Sites · 100+ TTs</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="layout">
+      <!-- LEFT: Upload & Status -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <div class="panel-title-badge">1</div>
+            <span>Upload Escalation Data & TT / Alarm Files</span>
+          </div>
+        </div>
+        <p class="panel-subtitle">
+          Escalation Matrix is used as the source of truth; TT / Alarm file provides the <strong>Ticket ID + Site ID</strong> list.
+        </p>
+        <div class="panel-body">
+          <!-- Escalation Matrix Upload -->
+          <div class="upload-zone">
+            <div class="upload-main">
+              <div class="upload-icon">📊</div>
+              <div class="upload-text">
+                <div class="upload-text-title">Escalation Matrix Excel</div>
+                <div class="upload-text-desc">
+                  Expected columns: <strong>Site ID, Site Name, Technician, Supervisor, CE + Phone</strong>.
+                </div>
+              </div>
+              <div class="upload-actions">
+                <label class="btn btn-secondary">
+                  <span class="icon">⬆</span>
+                  <span>Select File</span>
+                  <input id="escalationFileInput" type="file" accept=".xlsx,.xls" />
+                </label>
+                <button id="clearEscalationBtn" class="btn btn-ghost" type="button">
+                  <span class="icon">✕</span>
+                  <span>Clear</span>
+                </button>
+              </div>
+            </div>
+            <div class="file-meta">
+              <div id="escalationFileInfo" class="file-pill empty">
+                <span class="dot"></span>
+                <span class="name">No file selected</span>
+                <span class="meta">.xlsx / .xls</span>
+              </div>
+              <span class="hint">
+                <strong>Tip</strong>: Works with 3,000+ escalation rows. Header names are matched automatically (case‑insensitive).
+              </span>
+            </div>
+          </div>
+
+          <!-- TT / Alarm Upload -->
+          <div class="upload-zone">
+            <div class="upload-main">
+              <div class="upload-icon">📂</div>
+              <div class="upload-text">
+                <div class="upload-text-title">TT / Alarm Excel</div>
+                <div class="upload-text-desc">
+                  Must include at least <strong>Ticket ID</strong> and <strong>Site ID</strong> columns.
+                </div>
+              </div>
+              <div class="upload-actions">
+                <label class="btn btn-secondary">
+                  <span class="icon">⬆</span>
+                  <span>Select File</span>
+                  <input id="ttFileInput" type="file" accept=".xlsx,.xls" />
+                </label>
+                <button id="clearTtBtn" class="btn btn-ghost" type="button">
+                  <span class="icon">✕</span>
+                  <span>Clear</span>
+                </button>
+              </div>
+            </div>
+            <div class="file-meta">
+              <div id="ttFileInfo" class="file-pill empty">
+                <span class="dot"></span>
+                <span class="name">No file selected</span>
+                <span class="meta">.xlsx / .xls</span>
+              </div>
+              <span class="hint">
+                Duplicate <strong>Site IDs</strong> are ignored automatically; latest unique list is used for matching.
+              </span>
+            </div>
+          </div>
+
+          <!-- Status / Summary -->
+          <div class="status-row">
+            <div class="status-pills" id="statusPills">
+              <div class="status-pill">
+                <span class="dot"></span>
+                <span>Waiting for files</span>
+              </div>
+            </div>
+            <div class="status-text" id="statusText">
+              Escalation and TT data not yet loaded.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Results -->
+      <div class="panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            <div class="panel-title-badge">2</div>
+            <span>Escalation Results</span>
+          </div>
+          <span class="tag tag-soft">
+            <span class="dot"></span>
+            In‑Browser Processing
+          </span>
+        </div>
+        <div class="results-panel">
+          <div class="results-top">
+            <div class="search-box">
+              <span class="icon">🔍</span>
+              <input id="searchInput" type="text" placeholder="Filter by Ticket, Site ID, Name or Phone…" />
+              <span class="meta">Ctrl+F friendly</span>
+            </div>
+            <div class="results-actions">
+              <button id="copyPhonesBtn" class="btn btn-secondary" type="button" disabled>
+                <span class="icon">📋</span>
+                <span>Copy All Phones</span>
+              </button>
+              <button id="exportExcelBtn" class="btn btn-secondary" type="button" disabled>
+                <span class="icon">⬇</span>
+                <span>Export to Excel</span>
+              </button>
+              <button id="clearResultsBtn" class="btn btn-ghost" type="button">
+                <span class="icon">🧹</span>
+                <span>Clear Table</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <div class="table-scroll">
+              <table id="resultsTable">
+                <thead>
+                  <tr>
+                    <th style="width: 80px;">
+                      <span class="label">Ticket</span>
+                    </th>
+                    <th style="width: 90px;">
+                      <span class="label">Site ID</span>
+                    </th>
+                    <th style="width: 120px;">
+                      <span class="label">Technician</span>
+                    </th>
+                    <th style="width: 120px;">
+                      <span class="label">Technician Phone</span>
+                    </th>
+                    <th style="width: 120px;">
+                      <span class="label">Supervisor</span>
+                    </th>
+                    <th style="width: 120px;">
+                      <span class="label">Supervisor Phone</span>
+                    </th>
+                    <th style="width: 120px;">
+                      <span class="label">CE</span>
+                    </th>
+                    <th style="width: 120px;">
+                      <span class="label">CE Phone</span>
+                    </th>
+                    <th style="width: 120px;">
+                      <span class="label">Status</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="resultsBody">
+                  <tr class="no-data-row">
+                    <td colspan="9">
+                      <div class="no-data">
+                        <h3>No escalation results yet</h3>
+                        <p>
+                          Upload both
+                          <span class="highlight">EscalationMatrix.xlsx</span>
+                          and
+                          <span class="highlight">TT_Log.xlsx</span> to generate contact details.
+                        </p>
+                        <div class="no-data-actions">
+                          <span class="tag">
+                            <span class="dot"></span>
+                            Technician · Supervisor · CE Contacts
+                          </span>
+                          <span class="tag">
+                            <span class="dot"></span>
+                            100% Local Browser Processing
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="footer">
+            <div>
+              <span class="strong">Performance</span>:
+              Designed for <span class="highlight">3,000+ escalation rows</span> and
+              <span class="highlight">100+ TT / alarm entries</span>.
+            </div>
+            <div id="summaryCounts">
+              <span class="pill-count">Rows: 0</span>
+              <span class="pill-count">Matched: 0</span>
+              <span class="pill-count">Not Found: 0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- State ---
+    let escalationMap = new Map(); // siteId (string) -> escalation row object
+    let escalationHeaders = {};
+    let ttRows = []; // { ticketId, siteId }
+    let results = []; // final matched state
+
+    const escalationFileInput = document.getElementById('escalationFileInput');
+    const ttFileInput = document.getElementById('ttFileInput');
+    const escalationFileInfo = document.getElementById('escalationFileInfo');
+    const ttFileInfo = document.getElementById('ttFileInfo');
+    const statusPills = document.getElementById('statusPills');
+    const statusText = document.getElementById('statusText');
+    const resultsBody = document.getElementById('resultsBody');
+    const searchInput = document.getElementById('searchInput');
+    const copyPhonesBtn = document.getElementById('copyPhonesBtn');
+    const exportExcelBtn = document.getElementById('exportExcelBtn');
+    const clearResultsBtn = document.getElementById('clearResultsBtn');
+    const clearEscalationBtn = document.getElementById('clearEscalationBtn');
+    const clearTtBtn = document.getElementById('clearTtBtn');
+    const summaryCounts = document.getElementById('summaryCounts');
+
+    // --- Utility: header lookup (case-insensitive, flexible) ---
+    function normalizeHeader(header) {
+      return String(header || '').trim().toLowerCase();
+    }
+
+    function findHeaderKey(headers, candidates) {
+      const normalized = headers.map(h => normalizeHeader(h));
+      for (const candidate of candidates) {
+        const idx = normalized.indexOf(candidate);
+        if (idx !== -1) return headers[idx];
+      }
+      // fallback: partial match
+      for (let i = 0; i < normalized.length; i++) {
+        const h = normalized[i];
+        for (const candidate of candidates) {
+          if (h.includes(candidate)) return headers[i];
+        }
+      }
+      return null;
+    }
+
+    function updateFileInfo(el, file) {
+      const nameSpan = el.querySelector('.name');
+      const metaSpan = el.querySelector('.meta');
+      const dot = el.querySelector('.dot');
+      if (file) {
+        el.classList.remove('empty');
+        nameSpan.textContent = file.name;
+        metaSpan.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+        dot.style.backgroundColor = '#34d399';
+      } else {
+        el.classList.add('empty');
+        nameSpan.textContent = 'No file selected';
+        metaSpan.textContent = '.xlsx / .xls';
+        dot.style.backgroundColor = '#f97316';
+      }
+    }
+
+    function setStatusPills(type, message) {
+      statusPills.innerHTML = '';
+      const pill = document.createElement('div');
+      pill.className = 'status-pill';
+      if (type === 'warn') pill.classList.add('warn');
+      if (type === 'error') pill.classList.add('error');
+      pill.innerHTML = '<span class="dot"></span><span>' + message + '</span>';
+      statusPills.appendChild(pill);
+    }
+
+    function setStatusText(text) {
+      statusText.textContent = text;
+    }
+
+    function resetResultsTable() {
+      resultsBody.innerHTML = `
+        <tr class="no-data-row">
+          <td colspan="9">
+            <div class="no-data">
+              <h3>No escalation results yet</h3>
+              <p>
+                Upload both <span class="highlight">EscalationMatrix.xlsx</span> and
+                <span class="highlight">TT_Log.xlsx</span> to generate contact details.
+              </p>
+              <div class="no-data-actions">
+                <span class="tag">
+                  <span class="dot"></span>
+                  Technician · Supervisor · CE Contacts
+                </span>
+                <span class="tag">
+                  <span class="dot"></span>
+                  100% Local Browser Processing
+                </span>
+              </div>
+            </div>
+          </td>
+        </tr>
+      `;
+      copyPhonesBtn.disabled = true;
+      exportExcelBtn.disabled = true;
+      results = [];
+      updateSummaryCounts();
+    }
+
+    function updateSummaryCounts() {
+      const total = results.length;
+      const notFound = results.filter(r => r.status === 'NOT_FOUND').length;
+      const matched = total - notFound;
+      summaryCounts.innerHTML = `
+        <span class="pill-count">Rows: ${total}</span>
+        <span class="pill-count">Matched: ${matched}</span>
+        <span class="pill-count">Not Found: ${notFound}</span>
+      `;
+    }
+
+    // --- File Reading Helpers ---
+    function readExcelFile(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+          const json = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+          callback(null, json);
+        } catch (err) {
+          callback(err);
+        }
+      };
+      reader.onerror = function() {
+        callback(new Error('Failed to read file'));
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // --- Parse Escalation Matrix ---
+    function parseEscalationMatrix(json) {
+      escalationMap.clear();
+      escalationHeaders = {};
+
+      if (!json || json.length === 0) {
+        throw new Error('Escalation matrix sheet is empty.');
+      }
+
+      const headers = Object.keys(json[0]);
+      if (headers.length === 0) {
+        throw new Error('Escalation matrix file has no header row.');
+      }
+
+      const siteIdKey = findHeaderKey(headers, ['site id', 'siteid', 'site_id', 'site code', 'site', 'site code/id']);
+      const techNameKey = findHeaderKey(headers, ['technician name', 'tech name', 'technician']);
+      const techPhoneKey = findHeaderKey(headers, ['technician phone', 'tech phone', 'technician mobile', 'technician contact', 'tech mobile']);
+      const supNameKey = findHeaderKey(headers, ['supervisor name', 'supervisor']);
+      const supPhoneKey = findHeaderKey(headers, ['supervisor phone', 'supervisor mobile', 'supervisor contact']);
+      const ceNameKey = findHeaderKey(headers, ['ce name', 'customer engineer', 'ce']);
+      const cePhoneKey = findHeaderKey(headers, ['ce phone', 'ce mobile', 'ce contact']);
+
+      if (!siteIdKey) {
+        throw new Error('Could not detect "Site ID" column in escalation matrix (check header naming).');
+      }
+
+      escalationHeaders = {
+        siteIdKey,
+        techNameKey,
+        techPhoneKey,
+        supNameKey,
+        supPhoneKey,
+        ceNameKey,
+        cePhoneKey
+      };
+
+      json.forEach(row => {
+        const siteIdRaw = row[siteIdKey];
+        if (siteIdRaw === undefined || siteIdRaw === null || siteIdRaw === '') return;
+        const siteId = String(siteIdRaw).trim();
+        if (!siteId) return;
+        const record = {
+          siteId,
+          technicianName: techNameKey ? String(row[techNameKey] || '').trim() : '',
+          technicianPhone: techPhoneKey ? String(row[techPhoneKey] || '').trim() : '',
+          supervisorName: supNameKey ? String(row[supNameKey] || '').trim() : '',
+          supervisorPhone: supPhoneKey ? String(row[supPhoneKey] || '').trim() : '',
+          ceName: ceNameKey ? String(row[ceNameKey] || '').trim() : '',
+          cePhone: cePhoneKey ? String(row[cePhoneKey] || '').trim() : ''
+        };
+        escalationMap.set(siteId, record);
+      });
+
+      if (escalationMap.size === 0) {
+        throw new Error('No valid rows with Site ID were found in escalation matrix.');
+      }
+    }
+
+    // --- Parse TT / Alarm File ---
+    function parseTtFile(json) {
+      ttRows = [];
+      if (!json || json.length === 0) {
+        throw new Error('TT / Alarm sheet is empty.');
+      }
+
+      const headers = Object.keys(json[0]);
+      if (headers.length === 0) {
+        throw new Error('TT / Alarm file has no header row.');
+      }
+
+      const siteIdKey = findHeaderKey(headers, ['site id', 'siteid', 'site_id', 'site', 'site code']);
+      const ticketKey = findHeaderKey(headers, ['ticket id', 'ticket', 'tt id', 'alarm id', 'alarm']);
+
+      if (!siteIdKey) {
+        throw new Error('Could not detect "Site ID" column in TT / Alarm file.');
+      }
+
+      // Ticket ID is helpful but not strictly mandatory
+      const set = new Set(); // unique by siteId
+      json.forEach(row => {
+        const siteIdRaw = row[siteIdKey];
+        if (siteIdRaw === undefined || siteIdRaw === null || siteIdRaw === '') return;
+        const siteId = String(siteIdRaw).trim();
+        if (!siteId) return;
+
+        const ticketId = ticketKey ? String(row[ticketKey] || '').trim() : '';
+        const key = siteId; // ignore duplicates by siteId only
+        if (set.has(key)) return;
+        set.add(key);
+        ttRows.push({ ticketId, siteId });
+      });
+
+      if (ttRows.length === 0) {
+        throw new Error('No valid Site IDs were found in TT / Alarm file.');
+      }
+    }
+
+    // --- Generate Results ---
+    function generateResults() {
+      if (escalationMap.size === 0 || ttRows.length === 0) {
+        resetResultsTable();
+        setStatusPills('warn', 'Waiting for both files');
+        setStatusText('Upload both Escalation Matrix and TT / Alarm Excel to see results.');
+        return;
+      }
+
+      const rows = [];
+      ttRows.forEach(row => {
+        const siteId = row.siteId;
+        const ticketId = row.ticketId || '';
+        const escalation = escalationMap.get(siteId);
+        if (!escalation) {
+          rows.push({
+            ticketId,
+            siteId,
+            technicianName: '',
+            technicianPhone: '',
+            supervisorName: '',
+            supervisorPhone: '',
+            ceName: '',
+            cePhone: '',
+            status: 'NOT_FOUND'
+          });
+        } else {
+          const missingContact = !escalation.technicianPhone || !escalation.supervisorPhone || !escalation.cePhone;
+          rows.push({
+            ticketId,
+            siteId,
+            technicianName: escalation.technicianName || '',
+            technicianPhone: escalation.technicianPhone || '',
+            supervisorName: escalation.supervisorName || '',
+            supervisorPhone: escalation.supervisorPhone || '',
+            ceName: escalation.ceName || '',
+            cePhone: escalation.cePhone || '',
+            status: missingContact ? 'MISSING_CONTACT' : 'OK'
+          });
+        }
+      });
+
+      results = rows;
+      renderResultsTable();
+      setStatusPills('success', 'Escalation contacts generated');
+      setStatusText('Matched ' + rows.length + ' unique Site IDs from TT / Alarm against escalation matrix.');
+      copyPhonesBtn.disabled = rows.length === 0;
+      exportExcelBtn.disabled = rows.length === 0;
+    }
+
+    function renderResultsTable() {
+      resultsBody.innerHTML = '';
+
+      if (!results.length) {
+        resetResultsTable();
+        return;
+      }
+
+      const filter = searchInput.value.trim().toLowerCase();
+      let visibleCount = 0;
+
+      results.forEach(r => {
+        const textForFilter = [
+          r.ticketId,
+          r.siteId,
+          r.technicianName,
+          r.technicianPhone,
+          r.supervisorName,
+          r.supervisorPhone,
+          r.ceName,
+          r.cePhone,
+          r.status
+        ].join(' ').toLowerCase();
+
+        if (filter && !textForFilter.includes(filter)) return;
+        visibleCount++;
+
+        const tr = document.createElement('tr');
+        if (r.status === 'NOT_FOUND') {
+          tr.classList.add('not-found');
+        } else if (r.status === 'MISSING_CONTACT') {
+          tr.classList.add('missing-contact');
+        }
+
+        const tdTicket = document.createElement('td');
+        tdTicket.textContent = r.ticketId || '-';
+        tdTicket.className = 'meta';
+        tr.appendChild(tdTicket);
+
+        const tdSite = document.createElement('td');
+        tdSite.textContent = r.siteId || '-';
+        tdSite.className = 'text-right';
+        tr.appendChild(tdSite);
+
+        const tdTechName = document.createElement('td');
+        tdTechName.textContent = r.technicianName || '-';
+        tr.appendChild(tdTechName);
+
+        const tdTechPhone = document.createElement('td');
+        tdTechPhone.textContent = r.technicianPhone || '-';
+        tr.appendChild(tdTechPhone);
+
+        const tdSupName = document.createElement('td');
+        tdSupName.textContent = r.supervisorName || '-';
+        tr.appendChild(tdSupName);
+
+        const tdSupPhone = document.createElement('td');
+        tdSupPhone.textContent = r.supervisorPhone || '-';
+        tr.appendChild(tdSupPhone);
+
+        const tdCeName = document.createElement('td');
+        tdCeName.textContent = r.ceName || '-';
+        tr.appendChild(tdCeName);
+
+        const tdCePhone = document.createElement('td');
+        tdCePhone.textContent = r.cePhone || '-';
+        tr.appendChild(tdCePhone);
+
+        const tdStatus = document.createElement('td');
+        const badge = document.createElement('span');
+        if (r.status === 'OK') {
+          badge.className = 'badge badge-soft';
+          badge.textContent = 'OK';
+        } else if (r.status === 'MISSING_CONTACT') {
+          badge.className = 'badge badge-warn';
+          badge.textContent = 'MISSING CONTACT';
+        } else if (r.status === 'NOT_FOUND') {
+          badge.className = 'badge badge-error';
+          badge.textContent = 'SITE NOT FOUND';
+        } else {
+          badge.className = 'badge';
+          badge.textContent = r.status;
+        }
+        tdStatus.appendChild(badge);
+        tr.appendChild(tdStatus);
+
+        resultsBody.appendChild(tr);
+      });
+
+      if (visibleCount === 0) {
+        const tr = document.createElement('tr');
+        tr.className = 'no-data-row';
+        const td = document.createElement('td');
+        td.colSpan = 9;
+        td.innerHTML = '<div class="no-data"><h3>No rows match your filter</h3><p>Try clearing the filter or adjusting your search terms.</p></div>';
+        tr.appendChild(td);
+        resultsBody.appendChild(tr);
+      }
+
+      updateSummaryCounts();
+    }
+
+    // --- Copy all phone numbers ---
+    async function copyAllPhones() {
+      if (!results.length) return;
+      const phones = new Set();
+      results.forEach(r => {
+        [r.technicianPhone, r.supervisorPhone, r.cePhone].forEach(p => {
+          const phone = (p || '').replace(/\s+/g, '');
+          if (phone) phones.add(phone);
+        });
+      });
+      const text = Array.from(phones).join(', ');
+      if (!text) {
+        alert('No phone numbers available to copy.');
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        setStatusPills('success', 'Phone numbers copied to clipboard');
+        setStatusText('Copied ' + phones.size + ' unique phone numbers.');
+      } catch (err) {
+        alert('Unable to access clipboard. You can still manually copy from the table.');
+      }
+    }
+
+    // --- Export results to Excel ---
+    function exportResultsToExcel() {
+      if (!results.length) return;
+      const data = results.map(r => ({
+        'Ticket': r.ticketId || '',
+        'Site ID': r.siteId || '',
+        'Technician': r.technicianName || '',
+        'Technician Phone': r.technicianPhone || '',
+        'Supervisor': r.supervisorName || '',
+        'Supervisor Phone': r.supervisorPhone || '',
+        'CE': r.ceName || '',
+        'CE Phone': r.cePhone || '',
+        'Status': r.status
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Escalation_Contacts');
+      XLSX.writeFile(wb, 'NOC_Escalation_Contacts.xlsx');
+    }
+
+    // --- Event Listeners ---
+    escalationFileInput.addEventListener('change', function() {
+      const file = this.files[0];
+      updateFileInfo(escalationFileInfo, file);
+      resetResultsTable();
+      if (!file) {
+        setStatusPills('warn', 'Escalation matrix cleared');
+        setStatusText('Please upload a new Escalation Matrix file.');
+        escalationMap.clear();
+        generateResults();
+        return;
+      }
+      setStatusPills('success', 'Reading escalation matrix…');
+      setStatusText('Processing escalation matrix Excel in browser.');
+      readExcelFile(file, (err, json) => {
+        if (err) {
+          setStatusPills('error', 'Error reading escalation matrix');
+          setStatusText(err.message || 'Unable to parse escalation matrix file.');
+          escalationMap.clear();
+          generateResults();
+          return;
+        }
+        try {
+          parseEscalationMatrix(json);
+          setStatusPills('success', 'Escalation matrix loaded');
+          setStatusText('Loaded ' + escalationMap.size + ' unique Site IDs from escalation matrix.');
+          generateResults();
+        } catch (e) {
+          escalationMap.clear();
+          setStatusPills('error', 'Escalation matrix invalid');
+          setStatusText(e.message);
+          generateResults();
+        }
+      });
+    });
+
+    ttFileInput.addEventListener('change', function() {
+      const file = this.files[0];
+      updateFileInfo(ttFileInfo, file);
+      resetResultsTable();
+      if (!file) {
+        setStatusPills('warn', 'TT / Alarm file cleared');
+        setStatusText('Please upload a new TT / Alarm file.');
+        ttRows = [];
+        generateResults();
+        return;
+      }
+      setStatusPills('success', 'Reading TT / Alarm file…');
+      setStatusText('Extracting Ticket IDs and Site IDs in browser.');
+      readExcelFile(file, (err, json) => {
+        if (err) {
+          setStatusPills('error', 'Error reading TT / Alarm file');
+          setStatusText(err.message || 'Unable to parse TT / Alarm file.');
+          ttRows = [];
+          generateResults();
+          return;
+        }
+        try {
+          parseTtFile(json);
+          setStatusPills('success', 'TT / Alarm file loaded');
+          setStatusText('Loaded ' + ttRows.length + ' unique Site IDs from TT / Alarm file (duplicates ignored).');
+          generateResults();
+        } catch (e) {
+          ttRows = [];
+          setStatusPills('error', 'TT / Alarm file invalid');
+          setStatusText(e.message);
+          generateResults();
+        }
+      });
+    });
+
+    searchInput.addEventListener('input', function() {
+      renderResultsTable();
+    });
+
+    copyPhonesBtn.addEventListener('click', copyAllPhones);
+    exportExcelBtn.addEventListener('click', exportResultsToExcel);
+    clearResultsBtn.addEventListener('click', function() {
+      resetResultsTable();
+      setStatusPills('warn', 'Results table cleared');
+      setStatusText('Upload files again or adjust inputs to regenerate results.');
+    });
+
+    clearEscalationBtn.addEventListener('click', function() {
+      escalationFileInput.value = '';
+      updateFileInfo(escalationFileInfo, null);
+      escalationMap.clear();
+      generateResults();
+      setStatusPills('warn', 'Escalation matrix cleared');
+      setStatusText('Escalation matrix reset. Please upload a new file.');
+    });
+
+    clearTtBtn.addEventListener('click', function() {
+      ttFileInput.value = '';
+      updateFileInfo(ttFileInfo, null);
+      ttRows = [];
+      generateResults();
+      setStatusPills('warn', 'TT / Alarm file cleared');
+      setStatusText('TT / Alarm file reset. Please upload a new file.');
+    });
+
+    // Initial state
+    resetResultsTable();
+  </script>
+</body>
+</html>
+
